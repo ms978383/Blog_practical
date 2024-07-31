@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Blog</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: left;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ddd;
+            position: relative;
+        }
+        .search-form {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .search-form input {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .search-form button {
+            padding: 5px 10px;
+            border: none;
+            background-color: #1e88e5;
+            color: #fff;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .search-form button:hover {
+            background-color: #155a9a;
+        }
+        .like-button {
+            color: #1e88e5;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .liked {
+            color: #d32f2f; 
+        }
+        .post {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .post h2 {
+            margin: 0;
+            color: #1e88e5;
+        }
+        
+        .post h2 a {
+            text-decoration: underline;
+            color: #1e88e5;
+        }
+        .post p {
+            color: #888;
+        }
+        .post .description {
+            color: #333;
+        }
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .pagination a {
+            color: #1e88e5;
+            text-decoration: none;
+            margin: 0 5px;
+        }
+        .pagination a.disabled {
+            color: #aaa;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>My Blog</h1>
+            <form id="search-form" class="search-form">
+                <input type="text" id="search-query" placeholder="Search by title or content" />
+                <button type="submit">Search</button>
+            </form>
+        </div>
+        <div id="posts-container">
+        </div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const searchForm = document.getElementById("search-form");
+            const postsContainer = document.getElementById("posts-container");
+            let currentPage = 1;
+            let currentQuery = '';
+
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}/${month}/${year}`;
+            }
+
+            function fetchPosts(page = 1, searchQuery = '') {
+                fetch(`/blogs/?page=${page}&search=${encodeURIComponent(searchQuery)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.posts) {
+                            console.error('Invalid response:', data);
+                            return;
+                        }
+
+                        postsContainer.innerHTML = '';
+
+                        data.posts.forEach(post => {
+                            const postElement = document.createElement("div");
+                            postElement.className = "post";
+                            postElement.innerHTML = `
+                                <h2><a href="/blogs/${post.id}/">${post.title}</a></h2>
+                                 <p>Published ${formatDate(post.created_at)} by admin</p>
+                                <p class="description">${post.content}</p>
+                                <button id="like-button-${post.id}" class="like-button" onclick="likePost(${post.id})">Like</button>
+                            `;
+                            postsContainer.appendChild(postElement);
+
+                            fetch(`/blogs/${post.id}/is_liked/`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.liked) {
+                                        document.getElementById(`like-button-${post.id}`).classList.add('liked');
+                                    }
+                                });
+                        });
+
+                        const pagination = document.createElement("div");
+                        pagination.className = "pagination";
+                        pagination.innerHTML = `
+                            ${data.page > 1 ? `<a href="#" onclick="navigatePage(${data.page - 1})">Previous</a>` : '<span class="disabled">Previous</span>'}
+                            ${Array.from({ length: data.num_pages }, (v, k) => k + 1).map(pageNum => 
+                                `<a href="#" class="${data.page === pageNum ? 'disabled' : ''}" onclick="navigatePage(${pageNum})">${pageNum}</a>`
+                            ).join('')}
+                            ${data.page < data.num_pages ? `<a href="#" onclick="navigatePage(${data.page + 1})">Next</a>` : '<span class="disabled">Next</span>'}
+                        `;
+                        postsContainer.appendChild(pagination);
+                    })
+                    .catch(error => {
+                        console.error('There was a problem with the fetch operation:', error);
+                    });
+            }
+
+            searchForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+            const query = document.getElementById("search-query").value;
+            fetch(`/search/?query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    postsContainer.innerHTML = ''; 
+
+                    if (data.posts && data.posts.length > 0) {
+                        data.posts.forEach(post => {
+                            const postElement = document.createElement('div');
+                            postElement.className = 'post';
+                            postElement.innerHTML = `
+                                <h2><a href="/blogs/${post.id}/">${post.title}</a></h2>
+                                <p>Published ${new Date(post.created_at).toLocaleString()}</p>
+                                <p class="description">${post.content}</p>
+                                <button id="like-button-${post.id}" class="like-button" onclick="likePost(${post.id})">Like</button>
+                            `;
+                            postsContainer.appendChild(postElement);
+                        });
+                    } else {
+                        postsContainer.innerHTML = '<p>No results found.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                });
+        });
+
+            window.navigatePage = function(page) {
+                currentPage = page;
+                fetchPosts(page, currentQuery);
+            };
+
+            window.likePost = function(postId) {
+                fetch(`/blogs/${postId}/like/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken') 
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        fetchPosts(currentPage, currentQuery); 
+                    } else {
+                        alert(data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                });
+            };
+
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            fetchPosts();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Blog</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: left;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ddd;
+        }
+        .post {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+        }
+        .post h2 {
+            margin: 0;
+            color: #1e88e5;
+        }
+        .post h2 a {
+            text-decoration: none;
+            color: #1e88e5;
+        }
+        .post p {
+            color: #888;
+        }
+        .post .description {
+            color: #333;
+        }
+        .sidebar {
+            width: 25%;
+            padding-left: 20px;
+        }
+        .main-content {
+            width: 70%;
+        }
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .pagination a {
+            color: #1e88e5;
+            text-decoration: none;
+            margin: 0 5px;
+        }
+        .pagination a.disabled {
+            color: #aaa;
+            pointer-events: none;
+        }
+        
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 60%;
+            max-width: 600px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .form-group textarea {
+            resize: vertical;
+        }
+        .form-group button {
+            background-color: #1e88e5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .form-group button:hover {
+            background-color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>My Blog</h1>
+        </div>
+        <div class="post">
+            <div class="main-content">
+                <h2>{{ post.title }}</h2>
+                <p>Published {{ post.created_at|date:"F j, Y, g:i a" }} by admin</p>
+                <p class="description">
+                    {{ post.content }}
+                </p>
+                <p><a href="#" id="share-link">Share this post</a></p>
+            </div>
+            <div class="sidebar">
+                <h3>My blog</h3>
+                <p>This is my blog.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="share-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Share this post</h2>
+            <form action="{% url 'share_blog' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="post_title" value="{{ post.title }}">
+                <div class="form-group">
+                    <label for="share-name">Name:</label>
+                    <input type="text" id="share-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="share-email">Email:</label>
+                    <input type="email" id="share-email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="share-comments">Comments:</label>
+                    <textarea id="share-comments" name="comments" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="submit">Share</button>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+
+    <script>
+        var modal = document.getElementById("share-modal");
+        var link = document.getElementById("share-link");
+        var span = document.getElementsByClassName("close")[0];
+
+        link.onclick = function(event) {
+            event.preventDefault();
+            modal.style.display = "block";
+        }
+
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
